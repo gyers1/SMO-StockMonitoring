@@ -1,0 +1,3 @@
+PySide6-Essentials==6.12.0
+httpx2[http2,brotli,zstd]==2.3.0
+pydantic==2.12.5
