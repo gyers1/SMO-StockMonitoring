@@ -9,7 +9,7 @@ import tempfile
 import time
 from pathlib import Path
 from ctypes import wintypes
-from native_windows import find_window
+from native_windows import find_window, exit_from_menu
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -92,6 +92,13 @@ with tempfile.TemporaryDirectory(prefix='SMO-package-') as temporary:
         assert abs(bounds.top - ribbon_top) <= 2, f'Frozen top changed: {ribbon_top} -> {bounds.top}'
         assert screen.grabWindow(0, bounds.left, bounds.top, bounds.right-bounds.left, bounds.bottom-bounds.top).save(str(root / 'qa/package-dashboard.png'))
         user32.PostMessageW(handle, 0x10, 0, 0)
+        time.sleep(.4)
+        assert proc.poll() is None, 'Closing floating window must keep tray process alive'
+        assert not user32.IsWindowVisible(handle)
+        subprocess.run([str(exe)], cwd=temporary, env=env, check=True, timeout=15)
+        time.sleep(.8)
+        assert user32.IsWindowVisible(handle), 'Relaunch did not restore hidden app'
+        exit_from_menu(handle)
         assert proc.wait(timeout=25) == 0
         state = Path(temporary) / 'SMO/ticker_state.json'
         assert state.is_file()
@@ -111,7 +118,7 @@ with tempfile.TemporaryDirectory(prefix='SMO-package-') as temporary:
             assert not find_window(restarted.pid, 'SMO 사용 안내'), 'Guide repeated after completion'
             reopened = find_window(restarted.pid, 'SMO · Stock Monitor')
             assert reopened
-            user32.PostMessageW(reopened, 0x10, 0, 0)
+            exit_from_menu(reopened)
             assert restarted.wait(timeout=25) == 0
         finally:
             if restarted.poll() is None:
@@ -119,7 +126,7 @@ with tempfile.TemporaryDirectory(prefix='SMO-package-') as temporary:
                 restarted.wait(timeout=10)
 
         result = {'guide_not_repeated':True, 'first_run_guide':True, 'standalone_start':True, 'native_window':True, 'duplicate_rejected':True,
-                  'downward_dashboard':True, 'user_data_saved':True, 'clean_exit':True, 'executable':str(exe)}
+                  'downward_dashboard':True, 'user_data_saved':True, 'clean_exit':True, 'close_to_tray':True, 'relaunch_restores':True, 'executable':str(exe)}
         (root / 'qa/package-result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
         print(json.dumps(result))
     finally:

@@ -1,4 +1,6 @@
 """Isolated install/uninstall, preserving the existing user's uninstall registration."""
+import ctypes
+from ctypes import wintypes
 import json
 import os
 import time
@@ -10,7 +12,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root))
 from app_version import VERSION
-from native_windows import installed_window, find_window, user32
+from native_windows import installed_window, find_window, user32, exit_from_menu
 
 registry = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\{7E42BA26-33C2-4142-8F14-A7502D26C405}_is1'
 with tempfile.TemporaryDirectory(prefix='SMO-install-') as temporary:
@@ -41,11 +43,25 @@ with tempfile.TemporaryDirectory(prefix='SMO-install-') as temporary:
             time.sleep(.5)
         assert restarted, 'Updated app did not restart'
         pid,handle=restarted
-        time.sleep(1)
+        for _ in range(60):
+            if user32.IsWindowVisible(handle): break
+            time.sleep(.1)
+        time.sleep(.8)
         coach=find_window(pid,'SMO 사용 안내')
         if coach: user32.PostMessageW(coach,0x10,0,0)
-        user32.PostMessageW(handle,0x10,0,0)
-        time.sleep(3)
+        time.sleep(.5)
+        kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+        kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
+        kernel.OpenProcess.restype=wintypes.HANDLE
+        kernel.WaitForSingleObject.argtypes=[wintypes.HANDLE,wintypes.DWORD]
+        kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+        process=kernel.OpenProcess(0x100000,False,pid)
+        assert process, 'Restarted app process disappeared before Exit test'
+        try:
+            exit_from_menu(handle)
+            assert kernel.WaitForSingleObject(process,20000)==0, 'Restarted app did not exit via menu'
+        finally:
+            kernel.CloseHandle(process)
     finally:
         try:
             if (target / 'unins000.exe').exists():

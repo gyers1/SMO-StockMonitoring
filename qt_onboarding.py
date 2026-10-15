@@ -73,6 +73,8 @@ class Onboarding(QDialog):
         island.dashboard.stock_selected.connect(self.stock_selected)
 
     def begin(self) -> None:
+        self.settings.setValue('shown', True)
+        self.settings.sync()
         self.island.guide_active = self
         self.show_step()
         self.show()

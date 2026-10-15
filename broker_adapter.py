@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 import re
 import time
-from dataclasses import replace
 from datetime import datetime
 from threading import Lock
 from typing import ClassVar, final
@@ -12,7 +11,6 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from broker_transport import BrokerTransport
 from broker_types import BrokerError, KST, Quote
 from broker_kis import kis_client
-from broker_toss_change import previous_close_change
 
 
 class Token(BaseModel):
@@ -39,6 +37,7 @@ class TossPrices(BaseModel):
 class KiwoomPrice(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
     return_code: int
+    return_msg: str = ''
     stk_cd: str = ''
     cur_prc: str = ''
     flu_rt: str = ''
@@ -122,8 +121,8 @@ class BrokerAdapter:
                     if stamp <= 0 or stamp > time.time() + 300:
                         raise BrokerError('증권사 시세 시각이 유효하지 않습니다.')
                 result = Quote(price, None, item.currency, stamp, symbol, self.name,
-                    '국내 통합(KRX·NXT)' if domestic else '미국', fetched_at=int(time.time()))
-                result = replace(result, change_pct=previous_close_change(self._wire, token, result))
+                    '국내 통합(KRX·NXT)' if domestic else '미국', fetched_at=int(time.time()),
+                    change_note='등락률 미제공 · 현재가 API에 전일 기준가가 없습니다.')
             else:
                 result = self._kiwoom(symbol, code, domestic, token)
             if result.price <= 0:
@@ -154,7 +153,9 @@ class BrokerAdapter:
                 raw = self._wire.request('https://api.kiwoom.com/api/us/mrkcond',
                     fields={'stk_cd': code, 'stex_tp': market}, token=token, api_id='usa20100')
                 candidate = KiwoomPrice.model_validate_json(raw)
-                if candidate.return_code not in (0, 1901, 1902, 1903):
+                missing = candidate.return_code in (1901, 1902, 1903) or (
+                    candidate.return_code == 7 and re.search(r'\[190[123]:', candidate.return_msg) is not None)
+                if candidate.return_code != 0 and not missing:
                     raise BrokerError('키움 미국 시세 조회 거절 · 등록 IP와 미국 시세 권한을 확인하세요.', candidate.return_code)
                 if candidate.return_code == 0 and candidate.stk_cd == code and candidate.stex_tp == market and candidate.curr_unit == 'USD' and candidate.cur_prc and decimal(candidate.cur_prc, absolute=True) > 0:
                     item = candidate

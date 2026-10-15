@@ -59,6 +59,7 @@ class GlassIsland(QWidget):
         self.dashboard = Dashboard(model)
         self.dashboard.setParent(self)
         self.dashboard.back_requested.connect(self.back_to_ribbon)
+        self.dashboard.guide_requested.connect(self.show_guide)
         self.dashboard.hide()
         self.fade = QGraphicsOpacityEffect(self.dashboard)
         self.dashboard.setGraphicsEffect(self.fade)
@@ -194,11 +195,11 @@ class GlassIsland(QWidget):
         value = self.model.quotes.get(symbol)
         if value is None:
             if not self.model.quotes.configured:
-                return name, 'API 설정 필요', '', None
+                return name, '연결 필요', '', None
             return name, '조회 실패' if self.model.quotes.error(symbol) else '시세 조회 중…', '', None
         stale = ' · 이전' if self.model.quotes.error(symbol) else ''
-        change = f'{value.change_pct:+.2f}%' if value.change_pct is not None else ''
-        return name, f'{money(value.price, value.currency)}{stale}', change, value.change_pct > 0 if value.change_pct is not None else None
+        change = '등락 —' if value.change_pct is None else '0.00%' if value.change_pct == 0 else f'{value.change_pct:+.2f}%'
+        return name, f'{money(value.price, value.currency)}{stale}', change, value.change_pct > 0 if value.change_pct else None
 
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
@@ -253,13 +254,13 @@ class GlassIsland(QWidget):
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:
             menu = QMenu(self)
-            menu.addAction('시세 페이지', lambda: self.open_dashboard('quotes'))
-            menu.addAction('관심종목 페이지', lambda: self.open_dashboard('watchlist'))
-            menu.addAction('증권사 API 설정', self.dashboard.open_broker_settings)
-            menu.addAction('사용 안내 다시 보기', self.show_guide)
+            menu.addAction('시세', lambda: self.open_dashboard('quotes'))
+            menu.addAction('관심종목', lambda: self.open_dashboard('watchlist'))
+            menu.addAction('설정', self.dashboard.open_broker_settings)
+            menu.addAction('사용 안내', self.show_guide)
             menu.addAction('원으로 접기', self.collapse)
             menu.addSeparator()
-            menu.addAction('종료', self.close)
+            menu.addAction('종료', QApplication.quit)
             menu.exec(event.globalPosition().toPoint())
             return
         if event.button() == Qt.MouseButton.LeftButton:
@@ -283,7 +284,7 @@ class GlassIsland(QWidget):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         if self.mode == 'ribbon' and self.press_position is None:
             distance = self.body().right() - event.position().x()
-            tip = '원으로 접기' if distance < 34 else '관심종목 페이지' if distance < 64 else '시세 페이지' if distance < 94 else '고정됨' if self.pinned else '클릭하여 고정'
+            tip = '원으로 접기' if distance < 34 else '관심종목' if distance < 64 else '시세' if distance < 94 else '고정됨' if self.pinned else '클릭하여 고정'
             if distance >= 94 and self.symbols:
                 index = int((time.perf_counter() - self.cycle_start) / 4.4) % len(self.symbols)
                 quote = self.model.quotes.get(self.symbols[index])

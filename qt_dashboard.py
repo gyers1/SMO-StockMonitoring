@@ -16,6 +16,7 @@ from qt_add_motion import AddMotion
 from qt_search_dropdown import SearchDropdown
 from stock_catalog import Stock
 
+from glass_paint import TEXT, ORANGE, FROZEN
 from qt_styles import STYLE
 from qt_market import MarketBadge, money
 
@@ -50,6 +51,7 @@ class SearchEntry(QLineEdit):
 
 
 class Dashboard(QWidget):
+    guide_requested = Signal()
     back_requested = Signal()
     interaction_started = Signal()
     stock_selected = Signal()
@@ -68,11 +70,11 @@ class Dashboard(QWidget):
         root.setContentsMargins(16, 12, 16, 12)
         root.setSpacing(8)
         header = QHBoxLayout()
-        self.title = QLabel("시세 페이지")
+        self.title = QLabel("시세")
         self.title.setObjectName("title")
         header.addWidget(self.title)
         header.addStretch()
-        self.settings_button = self.button("⚙", "증권사 API 설정", self.open_broker_settings)
+        self.settings_button = self.button("⚙", "설정", self.open_broker_settings)
         header.addWidget(self.settings_button)
         back = self.button("←  한 줄로", "한 줄 시세로 돌아가기", self.back_requested.emit)
         back.setStyleSheet("background: rgba(160,189,219,25); font-weight: 600; padding: 4px 12px;")
@@ -132,13 +134,14 @@ class Dashboard(QWidget):
         self.dismiss_results()
         dialog = BrokerSettingsDialog(self.model.broker_settings, self)
         dialog.applied.connect(self.model.reload_broker)
+        dialog.guide_requested.connect(self.guide_requested, Qt.ConnectionType.QueuedConnection)
         dialog.exec()
 
     def show_page(self, page: str) -> None:
         self.stop_feedback()
         self.page = page
         searching = page == "quotes"
-        self.title.setText("시세 페이지" if searching else "관심종목 페이지")
+        self.title.setText("시세" if searching else "관심종목")
         self.entry.setVisible(searching)
         self.hint.setVisible(searching)
         self.dismiss_results()
@@ -237,7 +240,7 @@ class Dashboard(QWidget):
             self.watch_layout.addWidget(row)
             self.watch_rows[symbol] = row
         if not self.model.groups[self.model.selected_group]:
-            empty = QLabel("시세 페이지에서 종목을 검색해 담아보세요.")
+            empty = QLabel("시세에서 종목을 검색해 담아보세요.")
             empty.setObjectName("muted")
             self.watch_layout.addWidget(empty)
         self.render_results()
@@ -262,13 +265,16 @@ class Dashboard(QWidget):
         for symbol, label in self.price_labels:
             quote = self.model.quotes.get(symbol)
             failed = self.model.quotes.error(symbol)
+            label.setStyleSheet('color:' + TEXT.name())
             if quote is None:
                 message = self.model.quotes.message(symbol)
-                label.setText("시세 확인 필요" if failed else "API 설정 필요" if not self.model.quotes.configured else "가격 확인 중…")
+                label.setText("시세 확인 필요" if failed else "연결 필요" if not self.model.quotes.configured else "가격 확인 중…")
                 label.setToolTip(message)
                 continue
             label.setToolTip(quote.tooltip + ("\n갱신 실패 · 마지막으로 받은 가격" if failed else ""))
-            change = "" if quote.change_pct is None else f" {quote.change_pct:+.2f}%"
+            change = "등락률 확인 불가" if quote.change_pct is None else "0.00%" if quote.change_pct == 0 else f"{quote.change_pct:+.2f}%"
+            if not failed and quote.change_pct:
+                label.setStyleSheet('color:' + (ORANGE if quote.change_pct > 0 else FROZEN).name())
             stamp = time.strftime("%m/%d %H:%M", time.localtime(quote.timestamp)) if quote.timestamp else "체결시각 미제공"
             label.setText(f"{money(quote.price, quote.currency)}\n{'이전 시세 · ' if failed else change + ' · '}{stamp}")
 

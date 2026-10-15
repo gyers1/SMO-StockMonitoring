@@ -104,7 +104,7 @@ class SearchDropdown(QFrame):
             quote = self.model.quotes.get(stock.symbol)
             failed = self.model.quotes.error(stock.symbol)
             if quote is None:
-                label.setText("확인 필요" if failed else "API 설정 필요" if not self.model.quotes.configured else "확인 중…")
+                label.setText("확인 필요" if failed else "연결 필요" if not self.model.quotes.configured else "확인 중…")
                 self.rows[index].setToolTip(f"{stock.name} · {stock.market} · {stock.symbol}\n{self.model.quotes.message(stock.symbol)}")
                 continue
             self.rows[index].setToolTip(f"{stock.name} · {stock.market} · {stock.symbol}\n{quote.tooltip}" + ("\n갱신 실패 · 이전 시세" if failed else ""))

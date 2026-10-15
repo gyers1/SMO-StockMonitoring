@@ -53,3 +53,38 @@ def installed_window(executable: str) -> tuple[int, int] | None:
         return True
     user32.EnumWindows(callback_type(visit),0)
     return matches[0] if matches else None
+
+
+def exit_from_menu(handle: int) -> None:
+    """Activate only the tested process's real Qt context-menu Exit item."""
+    import time
+    assert handle, 'Missing test window'
+    owner = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(handle, ctypes.byref(owner))
+    user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+    user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+    user32.SetForegroundWindow(handle)
+    user32.PostMessageW(handle, 0x204, 2, (28 << 16) | 28)
+    time.sleep(.4)
+    user32.PostMessageW(handle, 0x205, 0, (28 << 16) | 28)
+    found = []
+    callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def visit(candidate, unused):
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(candidate, ctypes.byref(pid))
+        name = ctypes.create_unicode_buffer(256)
+        user32.GetClassNameW(candidate, name, 256)
+        if pid.value == owner.value and user32.IsWindowVisible(candidate) and 'Popup' in name.value:
+            found.append(candidate)
+        return True
+    user32.EnumWindows(callback_type(visit), 0)
+    assert found, 'Native SMO context menu did not open'
+    menu = found[0]
+    rect = wintypes.RECT()
+    user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    user32.GetClientRect(menu, ctypes.byref(rect))
+    position = ((rect.bottom - 14) << 16) | (rect.right // 2)
+    user32.PostMessageW(menu, 0x200, 0, position)
+    user32.PostMessageW(menu, 0x201, 1, position)
+    user32.PostMessageW(menu, 0x202, 0, position)

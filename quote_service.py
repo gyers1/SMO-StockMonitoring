@@ -88,26 +88,27 @@ class QuoteService:
             if generation != self._generation or self._closed:
                 return
         result = None
-        error = ''
+        error = '시세 처리 중 오류가 발생했습니다. 잠시 후 다시 조회합니다.'
         try:
             result = adapter.fetch(symbol)
+            error = ''
         except BrokerError as exc:
             error = str(exc)
-        with self._lock:
-            if generation != self._generation or self._closed:
-                return
-            self._pending.discard(symbol)
-            if result is not None:
-                current = self._quotes.get(symbol)
-                if current and current.timestamp and result.timestamp and result.timestamp < current.timestamp:
-                    error = '이전 시세가 수신되어 마지막 확인 가격을 유지합니다.'
-                else:
-                    self._quotes[symbol] = result
-                    _ = self._errors.pop(symbol, None)
-                    self._status = f'{adapter.name} · 5초 자동 조회'
-            if error:
-                self._errors[symbol] = error
-                self._status = f'{adapter.name} · 일부 시세 확인 필요'
+        finally:
+            with self._lock:
+                if generation == self._generation and not self._closed:
+                    self._pending.discard(symbol)
+                    if result is not None:
+                        current = self._quotes.get(symbol)
+                        if current and current.timestamp and result.timestamp and result.timestamp < current.timestamp:
+                            error = '이전 시세가 수신되어 마지막 확인 가격을 유지합니다.'
+                        else:
+                            self._quotes[symbol] = result
+                            _ = self._errors.pop(symbol, None)
+                            self._status = f'{adapter.name} · 5초 자동 조회'
+                    if error:
+                        self._errors[symbol] = error
+                        self._status = f'{adapter.name} · 일부 시세 확인 필요'
 
     def get(self, symbol: str) -> Quote | None:
         with self._lock:

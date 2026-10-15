@@ -56,7 +56,7 @@ def main() -> None:
             window.open_dashboard('quotes')
             QTest.qWait(1100)
             dash = window.dashboard
-            gear = next(button for button in dash.findChildren(QPushButton) if button.toolTip() == '증권사 API 설정')
+            gear = next(button for button in dash.findChildren(QPushButton) if button.toolTip() == '설정')
             modal_seen: list[bool] = []
 
             def save_fixture() -> None:
@@ -108,7 +108,7 @@ def main() -> None:
             QTest.qWait(600)
             assert not model.quotes.configured
             assert model.quotes.get('005930.KS') is None
-            assert all('API 설정 필요' in label.text() for _, label in dash.price_labels)
+            assert all('연결 필요' in label.text() for _, label in dash.price_labels)
             capture(window, 'disconnected-dashboard')
             window.collapse()
             QTest.qWait(1100)
@@ -121,7 +121,7 @@ def main() -> None:
 
             def choose_settings() -> None:
                 menu = next(menu for menu in window.findChildren(QMenu) if menu.isVisible())
-                action = next(action for action in menu.actions() if action.text() == '증권사 API 설정')
+                action = next(action for action in menu.actions() if action.text() == '설정')
                 QTimer.singleShot(150, close_orb_settings)
                 QTest.mouseClick(menu, Qt.MouseButton.LeftButton, pos=menu.actionGeometry(action).center())
 

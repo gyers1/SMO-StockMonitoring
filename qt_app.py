@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
-from PySide6.QtCore import QLockFile, QPointF, QSettings, QTimer
+from PySide6.QtCore import QLockFile, QPointF, QTimer
 from PySide6.QtGui import QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication
 
@@ -16,6 +16,8 @@ from qt_model import TickerModel
 from qt_startup import StartupSplash
 from app_version import VERSION
 from app_paths import DATA_DIR
+from qt_presence import AppPresence, claim_first_guide, restore_running_app
+from runtime_diagnostics import install_diagnostics
 
 
 def configure_fonts(app: QApplication) -> None:
@@ -34,7 +36,9 @@ def run() -> None:
     app.setApplicationVersion(VERSION)
     lock = QLockFile(str(DATA_DIR / "SMO.lock"))
     if not lock.tryLock(100):
+        restore_running_app(DATA_DIR)
         return
+    diagnostics = install_diagnostics(DATA_DIR)
     configure_fonts(app)
     model = TickerModel()
     if not model.state_path.exists():
@@ -42,13 +46,13 @@ def run() -> None:
         model.x, model.y = center.x() - 18, center.y() - 18
     window = GlassIsland(model)
     window.guide_requested.connect(partial(show_guide, window))
-    guide = QSettings(str(DATA_DIR / "guide.ini"), QSettings.Format.IniFormat)
+    presence = AppPresence(window)
     splash = StartupSplash(QPointF(window.anchor))
 
     def ready() -> None:
         window.show()
         window.suppressed = True
-        if '--guide' in sys.argv or not guide.value("completed", False, type=bool):
+        if claim_first_guide(DATA_DIR / 'guide.ini'):
             QTimer.singleShot(250, window.show_guide)
         from qt_update import startup_check
         startup_check(window, window.dashboard.status)

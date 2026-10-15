@@ -87,6 +87,6 @@ def ribbon_text(painter: QPainter, rect: QRectF, name: str, price: str, change: 
     price = painter.fontMetrics().elidedText(price, Qt.TextElideMode.ElideRight, int(price_rect.width()))
     painter.drawText(price_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight, price)
     if change:
-        painter.setPen(ORANGE if rising else FROZEN)
+        painter.setPen(TEXT if rising is None else ORANGE if rising else FROZEN)
         painter.drawText(QRectF(rect.right() - change_width + 8, rect.y(), change_width - 8, rect.height()),
                          Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight, change)

@@ -90,7 +90,7 @@ class TickerModel(QObject):
             credentials = self.broker_settings.load()
         except SettingsError:
             credentials = None
-            self.broker_error = "API 설정을 읽지 못했습니다. 설정에서 다시 저장해 주세요."
+            self.broker_error = "연결 정보를 읽지 못했습니다. 설정에서 다시 저장해 주세요."
         if credentials is None:
             self.quotes.configure("", "", "")
         else:

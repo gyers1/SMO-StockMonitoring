@@ -16,6 +16,7 @@ from quote_service import ConnectionResult, check_connection
 
 class BrokerSettingsDialog(QDialog):
     applied = Signal()
+    guide_requested = Signal()
 
     def __init__(self, store: BrokerSettings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -31,7 +32,7 @@ class BrokerSettingsDialog(QDialog):
         root = QVBoxLayout(self)
         root.setContentsMargins(20, 16, 20, 16)
         root.setSpacing(12)
-        title = QLabel('내 증권사 연결')
+        title = QLabel('설정')
         title.setObjectName('title')
         root.addWidget(title)
         intro = QLabel('본인 명의 API 키로 시세만 조회합니다.')
@@ -64,7 +65,7 @@ class BrokerSettingsDialog(QDialog):
         self.show_keys = QCheckBox('입력한 키 표시')
         self.show_keys.toggled.connect(self.toggle_keys)
         root.addWidget(self.show_keys)
-        note = QLabel('현재 Windows 계정에 암호화하여 저장합니다.\n연결 확인은 인증 요청을 보내며, 저장·적용하면 시세 조회를 시작합니다.')
+        note = QLabel('현재 Windows 계정에 암호화하여 저장합니다.\n연결 확인은 인증 요청을 보내며, 저장하면 시세 조회를 시작합니다.')
         note.setWordWrap(True)
         note.setObjectName('muted')
         root.addWidget(note)
@@ -73,7 +74,7 @@ class BrokerSettingsDialog(QDialog):
         self.status.setStyleSheet('color:#E6A16A; font-size:13px; font-weight:600; padding:8px; background:#241E1B; border-radius:8px;')
         root.addWidget(self.status)
         actions = QHBoxLayout()
-        self.delete_button = QPushButton('연결 삭제')
+        self.delete_button = QPushButton('연결 해제')
         self.delete_button.clicked.connect(self.clear_settings)
         self.probe_button = QPushButton('연결 확인')
         self.probe_button.clicked.connect(self.probe)
@@ -84,15 +85,18 @@ class BrokerSettingsDialog(QDialog):
         buttons = QHBoxLayout()
         cancel = QPushButton('닫기')
         cancel.clicked.connect(self.reject)
-        self.save_button = QPushButton('저장·적용')
+        self.save_button = QPushButton('저장')
         self.save_button.setStyleSheet('background: #293D53; font-weight: 700; padding: 9px 12px;')
         self.save_button.clicked.connect(self.save_settings)
         buttons.addWidget(cancel)
         buttons.addWidget(self.save_button, 1)
         root.addLayout(buttons)
-        update_button = QPushButton('앱 버전 · 업데이트')
+        update_button = QPushButton('업데이트')
         update_button.clicked.connect(self.open_updates)
         root.addWidget(update_button)
+        self.guide_button = QPushButton('사용 안내')
+        self.guide_button.clicked.connect(self.open_guide)
+        root.addWidget(self.guide_button)
         self.provider.currentIndexChanged.connect(self.select_provider)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
@@ -108,6 +112,10 @@ class BrokerSettingsDialog(QDialog):
                 self.status.setText('저장된 연결 정보를 불러왔습니다.')
         except SettingsError as error:
             self.status.setText(str(error))
+
+    def open_guide(self) -> None:
+        self.reject()
+        self.guide_requested.emit()
 
     def select_provider(self) -> None:
         self.key.clear()
