@@ -84,6 +84,7 @@ def test_generic_kiwoom_code_seven_does_not_hide_other_errors():
 def test_toss_auth_rejection_is_reauthorized_on_next_request():
     from broker_types import BrokerError
     replies = [json.dumps(dict(access_token='first', expires_in=3600)).encode(),
+               b'{"result":{"rankings":[],"rankedAt":null}}',
                BrokerError('rejected', 401),
                json.dumps(dict(access_token='second', expires_in=3600)).encode(),
                json.dumps(dict(result=[dict(symbol='AAPL', lastPrice='250', currency='USD')])).encode()]

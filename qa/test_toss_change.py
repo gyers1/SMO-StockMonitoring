@@ -14,9 +14,10 @@ from broker_transport import BrokerTransport
     ('IBM', 'USD', '226.8', None),
 ])
 def test_toss_preserves_price_but_does_not_invent_daily_change(symbol,currency,price,stamp):
-    # Given only current price, no official daily base or change in this API.
+    # Given a stock absent from rankings and only current price in /prices.
     code = symbol[:-3] if symbol.endswith(('.KS', '.KQ')) else symbol
     replies = [dict(access_token='fixture', expires_in=3600),
+               dict(result=dict(rankings=[], rankedAt=None)),
                dict(result=[dict(symbol=code,lastPrice=price,currency=currency,timestamp=stamp)])]
     with patch.object(BrokerTransport, 'request', side_effect=[json.dumps(x).encode() for x in replies]) as wire:
         quote = BrokerAdapter('toss', 'fixture', 'fixture').fetch(symbol)
@@ -24,5 +25,5 @@ def test_toss_preserves_price_but_does_not_invent_daily_change(symbol,currency,p
     assert quote.price == float(price)
     assert quote.change_pct is None
     assert quote.change_note
-    assert wire.call_count == 2
+    assert wire.call_count == 3
     assert wire.call_args.args[0].endswith('/prices')

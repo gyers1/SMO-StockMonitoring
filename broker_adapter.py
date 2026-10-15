@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from broker_transport import BrokerTransport
 from broker_types import BrokerError, KST, Quote
 from broker_kis import kis_client
+from broker_toss import TossQuotes
 
 
 class Token(BaseModel):
@@ -20,18 +21,6 @@ class Token(BaseModel):
     expires_in: int = 0
     expires_dt: str = ''
     return_code: int = 0
-
-
-class TossPrice(BaseModel):
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
-    symbol: str
-    lastPrice: str
-    currency: str
-    timestamp: datetime | None = None
-
-
-class TossPrices(BaseModel):
-    result: list[TossPrice]
 
 
 class KiwoomPrice(BaseModel):
@@ -67,6 +56,7 @@ class BrokerAdapter:
         self._expires = 0.0
         self._auth_lock = Lock()
         self._wire = BrokerTransport()
+        self._toss = TossQuotes(self._wire) if provider == 'toss' else None
         self._markets: dict[str, str] = {}
         self._kis = kis_client(self._key, self._secret) if provider == 'kis' else None
 
@@ -105,24 +95,8 @@ class BrokerAdapter:
             if self._kis is not None:
                 return self._kis.fetch(symbol)
             token = self._authorize()
-            if self.provider == 'toss':
-                payload = TossPrices.model_validate_json(self._wire.request(
-                    'https://openapi.tossinvest.com/api/v1/prices', fields={'symbols': code}, token=token, get=True))
-                matches = [p for p in payload.result if p.symbol == code]
-                if len(matches) != 1 or matches[0].currency != ('KRW' if domestic else 'USD'):
-                    raise BrokerError('종목 또는 통화가 일치하지 않아 시세를 표시하지 않습니다.')
-                item = matches[0]
-                price = decimal(item.lastPrice)
-                stamp = 0
-                if item.timestamp is not None:
-                    if item.timestamp.tzinfo is None:
-                        raise BrokerError('증권사 시세 시각의 시간대가 누락되었습니다.')
-                    stamp = int(item.timestamp.timestamp())
-                    if stamp <= 0 or stamp > time.time() + 300:
-                        raise BrokerError('증권사 시세 시각이 유효하지 않습니다.')
-                result = Quote(price, None, item.currency, stamp, symbol, self.name,
-                    '국내 통합(KRX·NXT)' if domestic else '미국', fetched_at=int(time.time()),
-                    change_note='등락률 미제공 · 현재가 API에 전일 기준가가 없습니다.')
+            if self._toss is not None:
+                result = self._toss.fetch(symbol, code, domestic, token)
             else:
                 result = self._kiwoom(symbol, code, domestic, token)
             if result.price <= 0:
