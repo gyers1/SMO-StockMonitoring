@@ -13,6 +13,7 @@ from broker_settings import BrokerCredentials
 ALLOWED: Final = frozenset({
     ('https://openapi.tossinvest.com/oauth2/token', ''),
     ('https://openapi.tossinvest.com/api/v1/prices', ''),
+    ('https://openapi.tossinvest.com/api/v1/candles', ''),
     ('https://api.kiwoom.com/oauth2/token', 'au10001'),
     ('https://api.kiwoom.com/api/dostk/stkinfo', 'ka10001'),
     ('https://api.kiwoom.com/api/us/mrkcond', 'usa20100'),

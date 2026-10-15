@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import re
 import time
+from dataclasses import replace
 from datetime import datetime
 from threading import Lock
 from typing import ClassVar, final
@@ -11,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from broker_transport import BrokerTransport
 from broker_types import BrokerError, KST, Quote
 from broker_kis import kis_client
+from broker_toss_change import previous_close_change
 
 
 class Token(BaseModel):
@@ -121,6 +123,7 @@ class BrokerAdapter:
                         raise BrokerError('증권사 시세 시각이 유효하지 않습니다.')
                 result = Quote(price, None, item.currency, stamp, symbol, self.name,
                     '국내 통합(KRX·NXT)' if domestic else '미국', fetched_at=int(time.time()))
+                result = replace(result, change_pct=previous_close_change(self._wire, token, result))
             else:
                 result = self._kiwoom(symbol, code, domestic, token)
             if result.price <= 0:

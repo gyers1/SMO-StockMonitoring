@@ -22,6 +22,8 @@ from quote_service import test_connection as probe
 def wire(payloads):
     iterator = iter(payloads)
     def respond(self, url, **kwargs):
+        if url.endswith('/candles'):
+            return b'{"result":{"candles":[]}}'
         return json.dumps(next(iterator)).encode()
     return respond
 
