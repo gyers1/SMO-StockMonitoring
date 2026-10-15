@@ -5,11 +5,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QObject, QPointF, QSettings, Qt
-from PySide6.QtGui import QColor, QCursor, QIcon, QPainter, QPixmap
+from PySide6.QtGui import QCursor, QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
-from glass_paint import orb
 
 if TYPE_CHECKING:
     from qt_island import GlassIsland
@@ -45,16 +44,7 @@ class AppPresence(QObject):
     def __init__(self, window: GlassIsland) -> None:
         super().__init__(window)
         self.window = window
-        pixmap = QPixmap(32, 32)
-        pixmap.fill(Qt.GlobalColor.transparent)
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor('#080813'))
-        painter.drawEllipse(1, 1, 30, 30)
-        orb(painter, QPointF(16, 16))
-        painter.end()
-        icon = QIcon(pixmap)
+        icon = QIcon(str(Path(__file__).resolve().parent / 'assets' / 'smo.ico'))
         window.setWindowIcon(icon)
         self.tray = QSystemTrayIcon(icon, self)
         self.tray.setToolTip('SMO · 클릭하여 다시 보기')
@@ -88,12 +78,12 @@ class AppPresence(QObject):
             if socket is not None:
                 socket.close()
                 socket.deleteLater()
-                self.restore()
+                self.restore(center=True)
 
-    def restore(self) -> None:
+    def restore(self, *, center: bool = False) -> None:
         window = self.window
         screen = QApplication.screenAt(window.anchor.toPoint())
-        if screen is None:
+        if window.guide_active is None and (center or screen is None):
             screen = QApplication.screenAt(QCursor.pos()) or QApplication.primaryScreen()
             if screen is not None:
                 window.anchor = QPointF(screen.availableGeometry().center()) - QPointF(18, 18)

@@ -18,6 +18,7 @@ OutputBaseFilename=SMO-Setup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=assets\smo.ico
 UninstallDisplayIcon={app}\SMO.exe
 CloseApplications=yes
 [Languages]
@@ -27,7 +28,7 @@ Name: "desktopicon"; Description: "바탕 화면에 SMO 바로가기 만들기";
 [Files]
 Source: "dist\SMO\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 [Icons]
-Name: "{group}\SMO"; Filename: "{app}\SMO.exe"
-Name: "{autodesktop}\SMO"; Filename: "{app}\SMO.exe"; Tasks: desktopicon
+Name: "{group}\SMO"; Filename: "{app}\SMO.exe"; WorkingDir: "{app}"; IconFilename: "{app}\SMO.exe"
+Name: "{autodesktop}\SMO"; Filename: "{app}\SMO.exe"; WorkingDir: "{app}"; IconFilename: "{app}\SMO.exe"; Tasks: desktopicon
 [Run]
 Filename: "{app}\SMO.exe"; Description: "SMO 실행"; Flags: nowait postinstall skipifsilent

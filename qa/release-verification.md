@@ -1,3 +1,17 @@
+# SMO 1.3.3 — 2026-10-15
+
+- Confirmed user's shortcut target existed and installed old SMO remained responsive at second-monitor bottom. Old duplicate launch did not restore attention. New IPC relaunch recenters on cursor monitor; active guide anchor/geometry/step preserved.
+- Failing-first launch regressions: anchor20,20 vs941,497; active-guide80,40 unexpectedly941,497. Both green after scoped fixes.
+- Shared seven-size SMO ICO derives from actual glass surface/orb. Qt app, tray, EXE, installer and shortcut share it. Actual frozen PE icon group and seven icon resources verified.
+- Toss official REST1.2.24 /rankings MARKET_TRADING_AMOUNT realtime KR/US count100 supplies decimal changeRate. Same row price/rate, five-second shared cache. Recent60s snapshot accepted. Older snapshot accepted only if /prices exact decimal price matches and valid full-precision timestamp is no newer than rankedAt; original snapshot time retained. Otherwise current price remains with unknown daily change. No candle inference.
+- Live adapter check: Samsung210500/-9.26%, SK hynix1265000/-10.85%, KODEX20087025/-8.20%, AAPL344.78/+0.53%, NVDA218.65/-1.19%; IBM226.95 unknown (not ranked). These are observed provider values, not a guarantee of delay-free exchange ticks. No account/order endpoints used, no secrets logged.
+- 103 tests passed. basedpyright on touched production:0errors/27 nonblocking warnings. A handled COM diagnostic appears during some QTest waits; suite completes and separate frozen tests pass.
+- Fresh native12 screenshots+icon; independent final visual icon_guard_visual_final and functional launch_guard_final PASS. Active-guide issue caught and fixed before final capture/review.
+- Final frozen real Shell Link launch, hidden-window relaunch to center, embedded icon, explicit Exit PASS. Actual installer/package/guide/hover/downward dashboard/tray recovery/production updater helper restart/uninstall PASS, previous uninstall registration preserved.
+- Tested on this Windows host; not independent clean VM. No private profile included. Public update download verification follows publication.
+
+---
+
 # SMO 1.3.2 — 2026-10-15
 
 - Concise menus/titles: 시세, 관심종목, 설정; settings: 업데이트, 사용 안내.

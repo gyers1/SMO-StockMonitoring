@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 from PySide6.QtCore import QLockFile, QPointF, QTimer
-from PySide6.QtGui import QFont, QFontDatabase
+from PySide6.QtGui import QFont, QFontDatabase, QIcon
 from PySide6.QtWidgets import QApplication
 
 from qt_island import GlassIsland
@@ -34,6 +34,7 @@ def run() -> None:
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName("SMO")
     app.setApplicationVersion(VERSION)
+    app.setWindowIcon(QIcon(str(ROOT / "assets" / "smo.ico")))
     lock = QLockFile(str(DATA_DIR / "SMO.lock"))
     if not lock.tryLock(100):
         restore_running_app(DATA_DIR)

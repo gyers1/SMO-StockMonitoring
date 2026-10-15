@@ -107,7 +107,16 @@ hides to tray, preserving quote workers; explicit exit shuts down. No second tas
 button when the tray is available. Relaunching an already-running app restores it.
 Guide automatically appears only once per user profile: persist shown before display,
 also honor existing completed marker. Dismissal keeps it off on future launches.
-Settings reuse existing button typography/spacing for '사용 안내 다시 보기'; close
+Settings reuse existing button typography/spacing for '사용 안내'; close
 settings before opening the nonmodal tutorial. No new colors or animation patterns.
 
 Quote direction: orange rise, Frozen fall, softwhite flat or unknown. Unknown displays 등락 — in ribbon and 등락률 확인 불가 in dashboard; tooltip explains provider limitations. Never color an unknown or flat quote as a fall.
+
+## Launch identity and recovery (1.3.3)
+Use assets/smo.ico at every system entry: Qt application/tray, frozen EXE,
+installer and shortcuts. ICO sizes 16 through256 derive from shared surface+orb.
+Duplicate launch brings the orb to the pointer monitor center; preserve an active
+onboarding guide's anchor, geometry and step. Tray restore keeps normal placement.
+Toss daily change uses only a recent (<=60s) official turnover-ranking snapshot:
+price and percentage come from the same row, cached per market for five seconds.
+Older snapshots are retained only when /prices confirms exact price and a trade timestamp no newer than rankedAt; preserve original ranking time/session. Otherwise retain /prices with unknown percentage.
